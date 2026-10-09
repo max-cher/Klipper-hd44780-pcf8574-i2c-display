@@ -2,6 +2,9 @@
 import logging
 from .. import bus
 
+
+BACKGROUND_PRIORITY_CLOCK = 0x7fffffff00000000
+
 LINE_LENGTH_DEFAULT=20
 LINE_LENGTH_OPTIONS=[16, 20]
 
@@ -16,8 +19,10 @@ class hd44780_i2c():
         self.hd44780_protocol_init = config.getboolean('hd44780_protocol_init',
                                                        True)
         self.i2c = bus.MCU_I2C_from_config(config, default_addr=39,
-                                           default_speed=400000)
+                                           default_speed=400000,
+                                           async_write_only=True)
         self.mcu = self.i2c.get_mcu()
+
         self.line_length = config.getchoice('line_length', LINE_LENGTH_OPTIONS,
                                             LINE_LENGTH_DEFAULT)
         
@@ -44,7 +49,7 @@ class hd44780_i2c():
         data = [0, 0]
         data[0] = halfByte
         data[1] = halfByte & 0b11111011
-        self.i2c.i2c_write(data, minclock)
+        self.i2c.i2c_write_noack(data, minclock, reqclock=BACKGROUND_PRIORITY_CLOCK)
 
     def send(self, cmds, is_data=False, minclock=0):
         for data in cmds:
